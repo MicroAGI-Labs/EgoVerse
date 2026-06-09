@@ -250,11 +250,22 @@ EXTRINSICS = {
     },
 }
 
+# Canonical MicroAGI color-0 intrinsics at the stored (rectified) resolution.
+
+MICROAGI_INTRINSICS = np.array(
+    [
+        [347.5209147135417, 0.0, 323.0985514322917, 0],
+        [0.0, 347.50667317708336, 177.64398193359373, 0],
+        [0.0, 0.0, 1.0, 0],
+    ]
+)
+
 INTRINSICS = {
     "base": ARIA_INTRINSICS,
     "base_half": ARIA_INTRINSICS_HALF,
     "mecka": MECKA_INTRINSICS,
     "scale": SCALE_INTRINSICS,
+    "microagi": MICROAGI_INTRINSICS,
 }
 
 ARIA_T_RGB_CPF = np.array(

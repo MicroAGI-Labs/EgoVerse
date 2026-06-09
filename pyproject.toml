@@ -54,6 +54,8 @@ dependencies = [
     "typing_extensions",
     "pyarrow",
     "simplejpeg",
+    "scipy",
+    "mcap",
     "prettytable",
     "datasets==4.0.0",
     "s5cmd",

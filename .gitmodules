@@ -1,3 +1,7 @@
 [submodule "external/openpi"]
 	path = external/openpi
 	url = https://github.com/GaTech-RL2/openpi.git
+[submodule "third_party/microagi-schemas"]
+	path = third_party/microagi-schemas
+	url = https://github.com/MicroAGI-Labs/microagi-schemas.git
+	update = none
