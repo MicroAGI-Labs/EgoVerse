@@ -62,9 +62,7 @@ def _import_schemas():
         PosesInFrame_pb2,
     )
     from microagi import (
-        camera_meta_pb2,
         health_pb2,
-        operator_meta_pb2,
         task_pb2,
     )
     return (
@@ -74,8 +72,6 @@ def _import_schemas():
         PosesInFrame_pb2,
         health_pb2,
         task_pb2,
-        camera_meta_pb2,
-        operator_meta_pb2,
     )
 
 
@@ -90,8 +86,6 @@ _TOPIC_HANDS_RIGHT = "/hands/right"
 _TOPIC_TASK_HEALTH = "/task/health"
 _TOPIC_TASK = "/task"
 _TOPIC_SUBTASK = "/task/subtask"
-_TOPIC_CAMERA_META = "/camera/meta"
-_TOPIC_OPERATOR_META = "/operator/meta"
 
 # Consortium episodes are stored downscaled (aria/scale 640x480, mecka 640x360).
 # We match that convention: rectify color frames to this width, preserving aspect
@@ -225,11 +219,6 @@ def _matrix_to_pose_row(T: np.ndarray) -> np.ndarray:
     return _pose_row(T[:3, 3], quat_xyzw)
 
 
-def _proto_map_to_dict(m) -> dict[str, str]:
-    """Copy a protobuf map<string,string> field into a plain dict."""
-    return {str(k): str(v) for k, v in m.items()}
-
-
 def _subtasks_to_annotations(
     subtasks: list[tuple[int, str]], color_ts_ns: list[int]
 ) -> list[tuple[str, int, int]]:
@@ -271,7 +260,7 @@ class MCAPV2Extractor:
         * ``episode_feats`` — the (T, ...) arrays (images, poses, keypoints).
         * ``metadata`` — mecka-style ``zarr.attrs`` payload: ``intrinsics``
           (scaled to the downscaled resolution), ``task``, ``objects``,
-          ``camera_meta``, ``operator_meta``, ``duration``, ``source_mcap``.
+          ``duration``, ``source_mcap``.
         * ``annotations`` — ``(text, start_idx, end_idx)`` subtask segments.
 
         Args:
@@ -286,8 +275,6 @@ class MCAPV2Extractor:
             PosesInFrame_pb2,
             health_pb2,
             task_pb2,
-            camera_meta_pb2,
-            operator_meta_pb2,
         ) = _import_schemas()
 
         # Pass 1: scan for color timestamps + collect raw payloads of every
@@ -304,8 +291,6 @@ class MCAPV2Extractor:
         color_info_msg = None
         tf_static_msg = None
         task_msg = None
-        camera_meta_msg = None
-        operator_meta_msg = None
         subtasks: list[tuple[int, str]] = []
 
         with open(episode_path, "rb") as f:
@@ -345,12 +330,6 @@ class MCAPV2Extractor:
                     st = task_pb2.Task()
                     st.ParseFromString(message.data)
                     subtasks.append((ts_ns, str(st.title)))
-                elif topic == _TOPIC_CAMERA_META and camera_meta_msg is None:
-                    camera_meta_msg = camera_meta_pb2.CameraMeta()
-                    camera_meta_msg.ParseFromString(message.data)
-                elif topic == _TOPIC_OPERATOR_META and operator_meta_msg is None:
-                    operator_meta_msg = operator_meta_pb2.OperatorMeta()
-                    operator_meta_msg.ParseFromString(message.data)
 
         if color_info_msg is None:
             raise ValueError(
@@ -496,17 +475,6 @@ class MCAPV2Extractor:
                 metadata["task_confidence"] = float(task_msg.confidence)
             if list(task_msg.tools):
                 metadata["objects"] = [str(t) for t in task_msg.tools]
-        if camera_meta_msg is not None:
-            cam = _proto_map_to_dict(camera_meta_msg.details)
-            dt = int(camera_meta_msg.device_type)
-            if dt:
-                cam["device_type"] = camera_meta_pb2.CameraMeta.DeviceType.Name(dt)
-            metadata["camera_meta"] = cam
-        if operator_meta_msg is not None:
-            op = _proto_map_to_dict(operator_meta_msg.details)
-            if operator_meta_msg.height_cm:
-                op["height_cm"] = int(operator_meta_msg.height_cm)
-            metadata["operator_meta"] = op
 
         return episode_feats, metadata, annotations
 
