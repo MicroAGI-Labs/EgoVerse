@@ -245,8 +245,8 @@ class Aria(Human):
 class Microagi(Human):
     """MicroAGI MK-series egocentric capture.
 
-    A sibling of :class:`Aria`, not a subtype: the MCAP→Zarr converter
-    (`mcap_to_zarr.py`) deliberately writes the same episode layout as Aria
+    A sibling of :class:`Aria`, not a subtype: MicroAGI ``.zarr`` episodes
+    use the same episode layout as Aria
     (``images.front_1``, ``obs_head_pose``,
     ``left/right.obs_{ee_pose,wrist_pose,keypoints}`` in the SLAM world frame),
     so the keymap below mirrors Aria's. Two things differ from Aria, which is

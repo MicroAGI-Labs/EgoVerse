@@ -1,5 +1,5 @@
-# Local single-episode MicroAGI keypoints data config (CPU smoke test).
-# Loads the post-fragment-to-egoverse output zarr via LocalEpisodeResolver
+# Local MicroAGI keypoints data config.
+# Loads MicroAGI .zarr episodes from ${paths.dataset_dir} via LocalEpisodeResolver
 # (no S3), using the Microagi embodiment keymap + wrist-frame keypoint transforms.
 _target_: egomimic.pl_utils.pl_data_utils.MultiDataModuleWrapper
 
@@ -8,7 +8,7 @@ train_datasets:
     _target_: egomimic.rldb.zarr.zarr_dataset_multi.MultiDataset._from_resolver
     resolver:
       _target_: egomimic.rldb.zarr.zarr_dataset_multi.LocalEpisodeResolver
-      folder_path: /home/marcopoggensee/post-fragment-to-egoverse/output_microagi
+      folder_path: ${paths.dataset_dir}
       key_map:
         _target_: egomimic.rldb.embodiment.human.Microagi.get_keymap
         keymap_mode: keypoints
@@ -18,7 +18,7 @@ train_datasets:
     filters:
       _target_: egomimic.rldb.filters.DatasetFilter
       filter_lambdas:
-        - "lambda row: row['episode_hash'] == '2026-05-11-06-27-24-760000'"
+        - "lambda row: row['embodiment'] == 'microagi_bimanual'"
     sync_from_s3: false
     mode: total
 
@@ -27,7 +27,7 @@ valid_datasets:
     _target_: egomimic.rldb.zarr.zarr_dataset_multi.MultiDataset._from_resolver
     resolver:
       _target_: egomimic.rldb.zarr.zarr_dataset_multi.LocalEpisodeResolver
-      folder_path: /home/marcopoggensee/post-fragment-to-egoverse/output_microagi
+      folder_path: ${paths.dataset_dir}
       key_map:
         _target_: egomimic.rldb.embodiment.human.Microagi.get_keymap
         keymap_mode: keypoints
@@ -37,7 +37,7 @@ valid_datasets:
     filters:
       _target_: egomimic.rldb.filters.DatasetFilter
       filter_lambdas:
-        - "lambda row: row['episode_hash'] == '2026-05-11-06-27-24-760000'"
+        - "lambda row: row['embodiment'] == 'microagi_bimanual'"
     sync_from_s3: false
     mode: total
 
