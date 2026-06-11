@@ -1,4 +1,5 @@
 import json
+import re
 
 import numpy as np
 import simplejpeg
@@ -6,10 +7,14 @@ import zarr
 
 from egomimic.rldb.zarr.zarr_dataset_multi import ZarrEpisode
 
+# Canonical task_name: short, stable, lowercase slug (e.g. "fold_clothes"). §4.1
+_TASK_NAME_RE = re.compile(r"^[a-z0-9]+(_[a-z0-9]+)*$")
 
-def validate_episode(zarr_path: str) -> tuple[list[str], list[str]]:
-    """Returns (errors, successes). Empty errors list = pass."""
+
+def validate_episode(zarr_path: str) -> tuple[list[str], list[str], list[str]]:
+    """Returns (errors, warnings, successes). Empty errors list = pass; warnings are advisory."""
     errors: list[str] = []
+    warnings: list[str] = []
     successes: list[str] = []
     ep = ZarrEpisode(zarr_path)
     meta = ep.metadata
@@ -27,6 +32,28 @@ def validate_episode(zarr_path: str) -> tuple[list[str], list[str]]:
         errors.append(f"Unexpected fps={meta['fps']}. Expected 30 or 60.")
     else:
         successes.append(f"fps={meta['fps']} is valid")
+
+    # ── task_name convention (§4.1) ──────────────────────────────────────────
+    task_name = meta.get("task_name")
+    if not task_name:
+        warnings.append("task_name is missing or empty")
+    elif not _TASK_NAME_RE.match(task_name):
+        warnings.append(
+            f"task_name {task_name!r} is not a canonical slug "
+            "(expected short, stable, lowercase, underscore-separated, e.g. "
+            "'fold_clothes'). Move trial-specific detail into task_description."
+        )
+    else:
+        successes.append(f"task_name {task_name!r} matches slug convention")
+
+    # ── task_description present (§5.3) ──────────────────────────────────────
+    task_description = meta.get("task_description")
+    if task_description is None or not str(task_description).strip():
+        warnings.append(
+            "task_description is empty — add a free-text description of the trial"
+        )
+    else:
+        successes.append("task_description present")
 
     # ── Frame counts ────────────────────────────────────────────────────────
     features = meta.get("features", {})
@@ -111,9 +138,11 @@ def validate_episode(zarr_path: str) -> tuple[list[str], list[str]]:
     annotation_keys = [
         k for k, f in features.items() if f.get("dtype") == "json" and k in store
     ]
+    total_spans = 0
     for key in annotation_keys:
         node = store[key]
         n = node.shape[0]
+        total_spans += n
         bad = 0
         first_err = None
         for i in range(n):
@@ -155,6 +184,15 @@ def validate_episode(zarr_path: str) -> tuple[list[str], list[str]]:
         else:
             successes.append(f"{key}: all {n} annotations well-formed")
 
+    # ── Subtask annotation presence (§7) ─────────────────────────────────────
+    if total_spans > 0:
+        successes.append(f"subtask annotations present ({total_spans} spans)")
+    else:
+        warnings.append(
+            "no subtask annotations present — optional but strongly encouraged "
+            "(at least one annotation span per task phase, see §7.2)"
+        )
+
     # ── Image decodability (spot-check first frame of each JPEG key) ────────
     jpeg_keys = [
         k for k, f in features.items() if f.get("dtype") == "jpeg" and k in store
@@ -172,17 +210,26 @@ def validate_episode(zarr_path: str) -> tuple[list[str], list[str]]:
         except Exception as e:
             errors.append(f"{key}: failed to decode frame 0: {e}")
 
-    return errors, successes
+    return errors, warnings, successes
 
 
-# Usage
-errors, successes = validate_episode(
-    "/storage/project/r-dxu345-0/shared/pick_place/2026-03-17-18-09-03-000000"
-)
-for s in successes:
-    print("OK:", s)
-if errors:
-    for e in errors:
-        print("ERROR:", e)
-else:
-    print("All checks passed.")
+if __name__ == "__main__":
+    import sys
+
+    path = (
+        sys.argv[1]
+        if len(sys.argv) > 1
+        else "/storage/project/r-dxu345-0/shared/pick_place/2026-03-17-18-09-03-000000"
+    )
+    errors, warnings, successes = validate_episode(path)
+    for s in successes:
+        print("OK:", s)
+    for w in warnings:
+        print("WARN:", w)
+    if errors:
+        for e in errors:
+            print("ERROR:", e)
+    else:
+        print("All checks passed.")
+    if warnings:
+        print(f"({len(warnings)} warning(s) — review before upload.)")
