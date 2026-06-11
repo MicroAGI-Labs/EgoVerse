@@ -269,11 +269,18 @@ INTRINSICS = {
 
 def intrinsics_from_metadata(metadata) -> np.ndarray | None:
     """Build a 3x4 intrinsics matrix from episode zarr attrs, if present.
+
+    attrs["intrinsics"] is either {"K": row-major 3x3, "width", ...} or a
+    bare 3x3 nested list, at the stored image resolution. Returns None when
+    the episode carries no calibration, so callers can fall back to the
+    per-embodiment INTRINSICS entry.
     """
     info = (metadata or {}).get("intrinsics")
-    if not isinstance(info, dict) or "K" not in info:
+    if isinstance(info, dict):
+        info = info.get("K")
+    if info is None:
         return None
-    K = np.asarray(info["K"], dtype=np.float64).reshape(3, 3)
+    K = np.asarray(info, dtype=np.float64).reshape(3, 3)
     return np.concatenate([K, np.zeros((3, 1))], axis=1)
 
 ARIA_T_RGB_CPF = np.array(
