@@ -495,9 +495,9 @@ The `embodiment` field in the DB row and in `zarr.attrs` must be one of the foll
 | `scale_bimanual` | 12 | Scale AI EgoDex + bimanual |
 | `scale_right_arm` | 13 | Scale AI EgoDex + right arm |
 | `scale_left_arm` | 14 | Scale AI EgoDex + left arm |
-| `microagi_bimanual` | 15 | MicroAGI MK-series egocentric capture + bimanual |
-| `microagi_right_arm` | 16 | MicroAGI MK-series egocentric capture + right arm |
-| `microagi_left_arm` | 17 | MicroAGI MK-series egocentric capture + left arm |
+| `microagi_bimanual` | 15 | MicroAGI egocentric capture + bimanual |
+| `microagi_right_arm` | 16 | MicroAGI egocentric capture + right arm |
+| `microagi_left_arm` | 17 | MicroAGI egocentric capture + left arm |
 
 **If your hardware is not in this list**, contact the consortium leads to register a new embodiment identifier before submitting data.
 

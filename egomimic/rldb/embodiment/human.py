@@ -252,9 +252,11 @@ class Microagi(Human):
     so the keymap below mirrors Aria's. Two things differ from Aria, which is
     why this is its own embodiment rather than an Aria subclass:
 
-    * intrinsics — MicroAGI color-0 is 1920x1080 with its own ``K`` (see
-      ``MICROAGI_INTRINSICS``; per-episode ``K`` lives in
-      ``zarr.attrs["calibration"]``).
+    * intrinsics — MicroAGI color-0 is stored rectified at 640x360 with its
+      own ``K``. Each episode carries it in ``zarr.attrs["intrinsics"]``;
+      the viz path reads it via ``intrinsics_from_metadata`` and only falls
+      back to the canonical ``MICROAGI_INTRINSICS`` constant when an episode
+      lacks calibration.
     * keypoint connectivity — MicroAGI emits the standard MediaPipe/MANO
       21-point hand ordering (index 0 = wrist, 1-4 thumb, 5-8 index, 9-12
       middle, 13-16 ring, 17-20 pinky). This is the ``Human`` base default, so

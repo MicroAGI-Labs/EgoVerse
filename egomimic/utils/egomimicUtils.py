@@ -249,9 +249,7 @@ EXTRINSICS = {
         "right": np.eye(4),
     },
 }
-
-# Canonical MicroAGI color-0 intrinsics at the stored (rectified) resolution.
-
+# For accurate intrinsics use the per-episode metdata. 
 MICROAGI_INTRINSICS = np.array(
     [
         [347.5209147135417, 0.0, 323.0985514322917, 0],
@@ -267,6 +265,16 @@ INTRINSICS = {
     "scale": SCALE_INTRINSICS,
     "microagi": MICROAGI_INTRINSICS,
 }
+
+
+def intrinsics_from_metadata(metadata) -> np.ndarray | None:
+    """Build a 3x4 intrinsics matrix from episode zarr attrs, if present.
+    """
+    info = (metadata or {}).get("intrinsics")
+    if not isinstance(info, dict) or "K" not in info:
+        return None
+    K = np.asarray(info["K"], dtype=np.float64).reshape(3, 3)
+    return np.concatenate([K, np.zeros((3, 1))], axis=1)
 
 ARIA_T_RGB_CPF = np.array(
     [
